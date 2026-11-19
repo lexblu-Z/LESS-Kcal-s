@@ -126,6 +126,8 @@ export class MealService {
     return {
       date: targetDate,
       goal: {
+        id: goal.id,
+        date: targetDate,
         calories: goal.calories,
         proteins: goal.proteins,
         carbs: goal.carbs,

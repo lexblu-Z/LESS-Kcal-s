@@ -35,6 +35,8 @@ export interface MealSummary extends NutritionalValues {
 export interface DailySummary {
   date: string;
   goal: {
+    id?: string;
+    date?: string;
     calories: number;
     proteins: number;
     carbs: number;

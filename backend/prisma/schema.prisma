@@ -1,0 +1,136 @@
+// Prisma Schema para LESS-Kcal-s
+// Banco de dados: PostgreSQL (compatível com SQLite para desenvolvimento local se necessário)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dailyGoals    DailyGoal[]
+  meals         Meal[]
+  customFoods   Food[]         @relation("UserCustomFoods")
+  favoriteFoods FavoriteFood[]
+
+  @@map("users")
+}
+
+// Meta diária versionada por data
+// Regra crítica: alterar a meta hoje não altera a meta de dias anteriores
+model DailyGoal {
+  id        String   @id @default(uuid())
+  userId    String
+  date      String   // Formato YYYY-MM-DD (fuso horário local do usuário)
+  calories  Float
+  proteins  Float
+  carbs     Float
+  fats      Float
+  waterMl   Int?     @default(2000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_goals")
+}
+
+// Base nutricional de alimentos (TACO / TBCA e alimentos personalizados)
+model Food {
+  id           String   @id @default(uuid())
+  name         String
+  category     String   // Cereais, Carnes, Leguminosas, Laticínios, Frutas, Verduras, etc.
+  source       String   @default("TACO") // TACO, TBCA, CUSTOM
+  baseUnit     String   @default("g") // g ou ml
+  baseQuantity Float    @default(100) // Valores nutricionais são baseados em 100g ou 100ml
+  calories     Float    // kcal por 100g/ml
+  proteins     Float    // g por 100g/ml
+  carbs        Float    // g por 100g/ml
+  fats         Float    // g por 100g/ml
+  fibers       Float    @default(0) // g por 100g/ml
+  servingSize  Float?   // Tamanho de uma porção comum em gramas (ex: 1 concha = 130g)
+  servingUnit  String?  // Nome da porção (ex: "concha", "colher de sopa", "fatia", "unidade")
+  isCustom     Boolean  @default(false)
+  userId       String?  // Nulo para alimentos gerais (TACO/TBCA), preenchido para alimentos do usuário
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user          User?          @relation("UserCustomFoods", fields: [userId], references: [id], onDelete: SetNull)
+  mealItems     MealItem[]
+  favoriteFoods FavoriteFood[]
+
+  @@index([name])
+  @@index([category])
+  @@index([userId])
+  @@map("foods")
+}
+
+// Refeições do dia (Café da manhã, Almoço, Lanche da tarde, Jantar, Ceia)
+model Meal {
+  id        String   @id @default(uuid())
+  userId    String
+  date      String   // Formato YYYY-MM-DD
+  mealType  String   // BREAKFAST, LUNCH, AFTERNOON_SNACK, DINNER, SUPPER
+  name      String   // "Café da manhã", "Almoço", etc.
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealItem[]
+
+  @@index([userId, date])
+  @@map("meals")
+}
+
+// Itens consumidos dentro de uma refeição com snapshot nutricional
+model MealItem {
+  id              String   @id @default(uuid())
+  mealId          String
+  foodId          String?
+  name            String
+  quantity        Float    // Quantidade inserida pelo usuário (ex: 150)
+  unit            String   // g, ml, unidade, porção
+  gramsEquivalent Float    // Quantidade convertida em gramas/ml para cálculos
+  calories        Float    // Snapshot calculado de calorias
+  proteins        Float    // Snapshot calculado de proteínas (g)
+  carbs           Float    // Snapshot calculado de carboidratos (g)
+  fats            Float    // Snapshot calculado de gorduras (g)
+  fibers          Float    @default(0) // Snapshot calculado de fibras (g)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  meal Meal  @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  food Food? @relation(fields: [foodId], references: [id], onDelete: SetNull)
+
+  @@index([mealId])
+  @@map("meal_items")
+}
+
+// Alimentos favoritos do usuário
+model FavoriteFood {
+  id        String   @id @default(uuid())
+  userId    String
+  foodId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food Food @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, foodId])
+  @@index([userId])
+  @@map("favorite_foods")
+}

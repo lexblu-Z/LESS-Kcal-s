@@ -1,0 +1,35 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { ENV } from '../config/env.js';
+import { JwtUserPayload } from '../types/index.js';
+
+export interface AuthenticatedRequest extends Request {
+  user?: JwtUserPayload;
+}
+
+export function authMiddleware(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({
+      error: 'Não autorizado. Token de autenticação não fornecido.'
+    });
+    return;
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, ENV.JWT_SECRET) as JwtUserPayload;
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({
+      error: 'Token inválido ou expirado. Faça login novamente.'
+    });
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "less-kcals-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplicativo Full Stack PWA de Controle Alimentar e Calorias (LESS-Kcal-s)",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build": "npm run build:backend && npm run build:frontend",
+    "test:backend": "npm run test --prefix backend",
+    "test": "npm run test:backend",
+    "seed": "npm run seed --prefix backend"
+  },
+  "keywords": [
+    "nutrition",
+    "calories",
+    "fitness",
+    "pwa",
+    "react",
+    "nodejs",
+    "typescript",
+    "prisma",
+    "taco",
+    "tbca"
+  ],
+  "author": "Leonardo Englerth dos Santos Souza <leonardoessouza@gmail.com>",
+  "license": "MIT"
+}
